@@ -121,103 +121,108 @@
         generateProblem();
     }
 
-    function generateProblem() {
-        document.getElementById('answer-display').classList.add('hidden');
-        const sf = Math.floor(Math.random() * 2) + 3; 
-        let val = (Math.random() * 90 + 10).toPrecision(sf);
+ function generateProblem() {
+    document.getElementById('answer-display').classList.add('hidden');
+    const sf = Math.floor(Math.random() * 2) + 3; 
+    let val = (Math.random() * 90 + 10).toPrecision(sf);
+    
+    const cat = ['mass', 'length', 'volume'][Math.floor(Math.random()*3)];
+    const b = bases[cat];
+    let start, end, top = [], bot = [], run = parseFloat(val);
+
+    // Helper to clean up computer math errors (e.g., 999.99999 -> 1000)
+    const clean = (num) => {
+        if (num >= 1) return Math.round(num * 1e10) / 1e10; // Rounds to 10 decimal places to snap to whole numbers
+        return num; 
+    };
+
+    if (currentMode === 'single') {
+        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        let p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
         
-        const cat = ['mass', 'length', 'volume'][Math.floor(Math.random()*3)];
-        const b = bases[cat];
-        let start, end, top = [], bot = [], run = parseFloat(val);
+        start = p1.s + b.s; 
+        end = p2.s + b.s;
+        top.push(`${val} \\text{ ${start}}`);
+        bot.push(` `);
 
-        if (currentMode === 'single') {
-            let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            let p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            
-            start = p1.s + b.s; 
-            end = p2.s + b.s;
-            top.push(`${val} \\text{ ${start}}`);
-            bot.push(` `);
+        if (p1.f >= 1) { 
+            top.push(`${clean(p1.f)} \\text{ ${b.s}}`);
+            bot.push(`1 \\text{ ${start}}`);
+        } else { 
+            top.push(`1 \\text{ ${b.s}}`);
+            bot.push(`${clean(1 / p1.f)} \\text{ ${start}}`);
+        }
+        run = run * p1.f;
 
-            if (p1.f >= 1) { 
-                top.push(`${p1.f} \\text{ ${b.s}}`);
-                bot.push(`1 \\text{ ${start}}`);
-            } else { 
-                top.push(`1 \\text{ ${b.s}}`);
-                bot.push(`${1 / p1.f} \\text{ ${start}}`);
-            }
-            run = run * p1.f;
-
-            if (p2.f >= 1) { 
-                top.push(`1 \\text{ ${end}}`);
-                bot.push(`${p2.f} \\text{ ${b.s}}`);
-            } else { 
-                top.push(`${1 / p2.f} \\text{ ${end}}`);
-                bot.push(`1 \\text{ ${b.s}}`);
-            }
-            run = run / p2.f;
-
-        } else if (currentMode === 'multi') {
-            let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
-            start = p1.s + b.s; 
-            end = imp.s;
-            top.push(`${val} \\text{ ${start}}`);
-            bot.push(` `);
-
-            if (p1.f >= 1) {
-                top.push(`${p1.f} \\text{ ${b.s}}`);
-                bot.push(`1 \\text{ ${start}}`);
-            } else {
-                top.push(`1 \\text{ ${b.s}}`);
-                bot.push(`${1 / p1.f} \\text{ ${start}}`);
-            }
-            run = run * p1.f;
-
-            top.push(`${b.bridge.val} \\text{ ${b.bridge.to}}`);
+        if (p2.f >= 1) { 
+            top.push(`1 \\text{ ${end}}`);
+            bot.push(`${clean(p2.f)} \\text{ ${b.s}}`);
+        } else { 
+            top.push(`${clean(1 / p2.f)} \\text{ ${end}}`);
             bot.push(`1 \\text{ ${b.s}}`);
-            run = run * b.bridge.val;
+        }
+        run = run / p2.f;
 
-            if (imp.s !== b.bridge.to) {
-                if (imp.r > 1) {
-                    top.push(`${imp.r} \\text{ ${imp.s}}`);
-                    bot.push(`1 \\text{ ${b.bridge.to}}`);
-                } else {
-                    top.push(`1 \\text{ ${imp.s}}`);
-                    bot.push(`${1/imp.r} \\text{ ${b.bridge.to}}`);
-                }
-                run = run * imp.r;
-            }
+    } else if (currentMode === 'multi') {
+        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
+        start = p1.s + b.s; 
+        end = imp.s;
+        top.push(`${val} \\text{ ${start}}`);
+        bot.push(` `);
 
-        } else if (currentMode === 'double') {
-            const db = bases.length; 
-            let p1 = prefixes[Math.floor(Math.random() * 4)]; 
-            let p2 = prefixes[Math.floor(Math.random() * 4)];
-            
-            start = `${p1.s}${db.s}/hr`;
-            end = `${p2.s}${db.s}/s`;
-            top.push(`${val} \\text{ ${p1.s}${db.s}}`);
-            bot.push(`1 \\text{ hr}`);
+        if (p1.f >= 1) {
+            top.push(`${clean(p1.f)} \\text{ ${b.s}}`);
+            bot.push(`1 \\text{ ${start}}`);
+        } else {
+            top.push(`1 \\text{ ${b.s}}`);
+            bot.push(`${clean(1 / p1.f)} \\text{ ${start}}`);
+        }
+        run = run * p1.f;
 
-            if (p1.f >= p2.f) {
-                top.push(`${p1.f / p2.f} \\text{ ${p2.s}${db.s}}`);
-                bot.push(`1 \\text{ ${p1.s}${db.s}}`);
+        top.push(`${b.bridge.val} \\text{ ${b.bridge.to}}`);
+        bot.push(`1 \\text{ ${b.s}}`);
+        run = run * b.bridge.val;
+
+        if (imp.s !== b.bridge.to) {
+            if (imp.r > 1) {
+                top.push(`${clean(imp.r)} \\text{ ${imp.s}}`);
+                bot.push(`1 \\text{ ${b.bridge.to}}`);
             } else {
-                top.push(`1 \\text{ ${p2.s}${db.s}}`);
-                bot.push(`${p2.f / p1.f} \\text{ ${p1.s}${db.s}}`);
+                top.push(`1 \\text{ ${imp.s}}`);
+                bot.push(`${clean(1/imp.r)} \\text{ ${b.bridge.to}}`);
             }
-            run = (run * p1.f) / p2.f;
-
-            top.push(`1 \\text{ hr}`);
-            bot.push(`3600 \\text{ s}`);
-            run = run / 3600;
+            run = run * imp.r;
         }
 
-        // IMPORTANT: This saves the data for ALL modes
-        currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
-        document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
+    } else if (currentMode === 'double') {
+        const db = bases.length; 
+        let p1 = prefixes[Math.floor(Math.random() * 4)]; 
+        let p2 = prefixes[Math.floor(Math.random() * 4)];
+        
+        start = `${p1.s}${db.s}/hr`;
+        end = `${p2.s}${db.s}/s`;
+        top.push(`${val} \\text{ ${p1.s}${db.s}}`);
+        bot.push(`1 \\text{ hr}`);
+
+        if (p1.f >= p2.f) {
+            top.push(`${clean(p1.f / p2.f)} \\text{ ${p2.s}${db.s}}`);
+            bot.push(`1 \\text{ ${p1.s}${db.s}}`);
+        } else {
+            top.push(`1 \\text{ ${p2.s}${db.s}}`);
+            bot.push(`${clean(p2.f / p1.f)} \\text{ ${p1.s}${db.s}}`);
+        }
+        run = (run * p1.f) / p2.f;
+
+        top.push(`1 \\text{ hr}`);
+        bot.push(`3600 \\text{ s}`);
+        run = run / 3600;
     }
+
+    currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
+    document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
+}
 
     function toggleAnswer() {
         const div = document.getElementById('answer-display');
