@@ -5,119 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dimensional Analysis Hub</title>
 
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
     <style>
-        :root { 
-            --primary: #2c3e50; 
-            --accent: #27ae60; 
-            --error: #c0392b; 
-            --bg: #f4f7f6; 
-            --sidebar-w: 260px; 
-        }
-
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        /* Sidebar */
-        #sidebar { 
-            width: var(--sidebar-w); 
-            background: var(--primary); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px; 
-        }
-
+        :root { --primary: #2c3e50; --accent: #27ae60; --error: #c0392b; --bg: #f4f7f6; --sidebar-w: 260px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: var(--sidebar-w); background: var(--primary); color: white; display: flex; flex-direction: column; padding: 20px; }
         #sidebar h2 { text-align: center; margin-bottom: 20px; }
-
-        .nav-btn { 
-            background: none; 
-            border: 1px solid #455a64; 
-            color: white; 
-            padding: 12px; 
-            margin-bottom: 8px; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            text-align: left;
-            font-size: 0.9rem;
-        }
-
+        .nav-btn { background: none; border: 1px solid #455a64; color: white; padding: 12px; margin-bottom: 8px; border-radius: 5px; cursor: pointer; text-align: left; }
         .nav-btn:hover { background: #34495e; }
         .nav-btn.active { background: var(--accent); border-color: var(--accent); }
-
-        .ref-group { 
-            margin-top: auto; 
-            border-top: 1px solid #455a64; 
-            padding-top: 20px; 
-        }
-
+        .ref-group { margin-top: auto; border-top: 1px solid #455a64; padding-top: 20px; }
         .ref-btn { background: #7f8c8d; }
-
-        /* Main Content */
-        #main-content { 
-            flex-grow: 1; 
-            padding: 40px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            overflow-y: auto;
-        }
-
-        .card { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 15px; 
-            width: 100%; 
-            max-width: 750px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        /* Problem container */
-        #problem-area {
-            font-size: 1.4rem;
-            line-height: 1.6;
-            margin-top: 30px;
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .answer-box {
-            margin-top: 20px;
-            padding: 20px;
-            background: #e8f5e9;
-            border-left: 5px solid var(--accent);
-            border-radius: 5px;
-            font-weight: bold;
-            color: var(--primary);
-            width: 80%;
-        }
-
+        #main-content { flex-grow: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+        .card { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 800px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        #problem-area { font-size: 1.4rem; margin-top: 30px; min-height: 200px; text-align: center; }
+        .answer-box { margin-top: 20px; padding: 20px; background: #f9f9f9; border-left: 5px solid var(--accent); border-radius: 5px; width: 100%; overflow-x: auto; }
         .hidden { display: none; }
-
-        /* Overlay tools */
-        .overlay { 
-            display: none; 
-            position: fixed; 
-            top: 5%; 
-            left: 280px; 
-            right: 20px; 
-            bottom: 5%; 
-            background: white; 
-            border-radius: 10px; 
-            z-index: 100; 
-            padding: 20px; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        }
-
-        .overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .overlay { display: none; position: fixed; top: 5%; left: 280px; right: 20px; bottom: 5%; background: white; border-radius: 10px; z-index: 100; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
         .close-btn { background: var(--error); color: white; border: none; padding: 5px 15px; cursor: pointer; border-radius: 3px; }
     </style>
 </head>
@@ -126,19 +43,9 @@
 
 <div id="sidebar">
     <h2>Dimensional Analysis</h2>
-
-    <button class="nav-btn" onclick="setMode('single', event)">
-        Single-Step Conversions
-    </button>
-
-    <button class="nav-btn" onclick="setMode('multi', event)">
-        Multi-Step (Metric/Imperial)
-    </button>
-
-    <button class="nav-btn" onclick="setMode('double', event)">
-        Double Conversions (Rates)
-    </button>
-
+    <button class="nav-btn" onclick="setMode('single', event)">Metric to Metric</button>
+    <button class="nav-btn" onclick="setMode('multi', event)">Metric / Imperial</button>
+    <button class="nav-btn" onclick="setMode('double', event)">Double Conversions</button>
     <div class="ref-group">
         <button class="nav-btn ref-btn" onclick="toggleRef('calc')">Calculator</button>
         <button class="nav-btn ref-btn" onclick="toggleRef('ptable')">Periodic Table</button>
@@ -149,102 +56,66 @@
 <div id="main-content">
     <div class="card">
         <h1 id="topic-title">Conversion Practice</h1>
-
         <div id="instruction-box" style="background: #e8f4fd; padding: 15px; border-left: 5px solid #3498db; margin-bottom: 20px; border-radius: 5px;">
-            <strong>How to use this hub:</strong>
-            <ol style="margin-top: 10px; padding-left: 20px;">
-                <li>Select a conversion type from the sidebar.</li>
-                <li>Click <strong>"New Problem"</strong> to generate a challenge.</li>
-                <li>Solve the problem on your own paper using the factor-label method.</li>
-                <li>Click <strong>"Check Answer"</strong> to verify your result.</li>
-            </ol>
+            <strong>How to use:</strong> Work the problem on paper, then click <strong>Check Answer</strong> to see the "Railroad Track" setup and the final value (rounded to correct sig figs).
         </div>
 
         <div id="problem-area">
-            <p id="problem-text" style="color: #7f8c8d;">Select a mode from the sidebar to begin.</p>
-            
+            <p id="problem-text" style="color: #7f8c8d;">Select a mode from the sidebar.</p>
             <div id="answer-display" class="answer-box hidden"></div>
-
-            <div style="margin-top: 30px; display: flex; gap: 10px;">
-                <button id="gen-btn" class="nav-btn" style="background: var(--accent); padding: 15px 30px; font-weight: bold; display: none;" onclick="generateProblem()">
-                    Generate New Problem
-                </button>
-                <button id="check-btn" class="nav-btn" style="background: var(--primary); padding: 15px 30px; font-weight: bold; display: none;" onclick="toggleAnswer()">
-                    Check Answer
-                </button>
+            <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+                <button id="gen-btn" class="nav-btn" style="background: var(--accent); padding: 12px 25px; display:none;" onclick="generateProblem()">New Problem</button>
+                <button id="check-btn" class="nav-btn" style="background: var(--primary); padding: 12px 25px; display:none;" onclick="toggleAnswer()">Check Answer</button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="calc" class="overlay">
-    <div class="overlay-header"><h3>Calculator</h3><button class="close-btn" onclick="toggleRef('calc')">X</button></div>
-    <iframe src="https://www.desmos.com/scientific" width="100%" height="90%"></iframe>
-</div>
-
-<div id="ptable" class="overlay">
-    <div class="overlay-header"><h3>Periodic Table</h3><button class="close-btn" onclick="toggleRef('ptable')">X</button></div>
-    <iframe src="https://ptable.com" width="100%" height="90%"></iframe>
-</div>
-
-<div id="eqn" class="overlay">
-    <div class="overlay-header"><h3>Equation Sheet</h3><button class="close-btn" onclick="toggleRef('eqn')">X</button></div>
-    <object data="Equation_Sheet2.pdf" type="application/pdf" width="100%" height="90%"></object>
-</div>
+<div id="calc" class="overlay"><button class="close-btn" onclick="toggleRef('calc')">X</button><iframe src="https://www.desmos.com/scientific" width="100%" height="90%"></iframe></div>
+<div id="ptable" class="overlay"><button class="close-btn" onclick="toggleRef('ptable')">X</button><iframe src="https://ptable.com" width="100%" height="90%"></iframe></div>
+<div id="eqn" class="overlay"><button class="close-btn" onclick="toggleRef('eqn')">X</button><object data="Equation_Sheet2.pdf" type="application/pdf" width="100%" height="90%"></object></div>
 
 <script>
     let currentProblem = null;
+    let currentMode = '';
 
     const prefixes = [
-        { name: 'mega', symbol: 'M', factor: 1e6 },
-        { name: 'kilo', symbol: 'k', factor: 1e3 },
-        { name: '', symbol: '', factor: 1 },
-        { name: 'centi', symbol: 'c', factor: 1e-2 },
-        { name: 'milli', symbol: 'm', factor: 1e-3 },
-        { name: 'micro', symbol: 'μ', factor: 1e-6 },
-        { name: 'nano', symbol: 'n', factor: 1e-9 },
-        { name: 'pico', symbol: 'p', factor: 1e-12 }
+        { s: 'M', f: 1e6 }, { s: 'k', f: 1e3 }, { s: '', f: 1 }, 
+        { s: 'c', f: 1e-2 }, { s: 'm', f: 1e-3 }, { s: 'μ', f: 1e-6 }, 
+        { s: 'n', f: 1e-9 }, { s: 'p', f: 1e-12 }
     ];
 
     const bases = {
-        mass: { unit: 'grams', s: 'g', bridge: { to: 'lb', val: 0.00220462 } },
-        length: { unit: 'meters', s: 'm', bridge: { to: 'in', val: 39.3701 } },
-        volume: { unit: 'Liters', s: 'L', bridge: { to: 'gal', val: 0.264172 } }
+        mass: { s: 'g', bridge: { to: 'lb', val: 0.00220462 } },
+        length: { s: 'm', bridge: { to: 'in', val: 39.3701 } },
+        volume: { s: 'L', bridge: { to: 'gal', val: 0.264172 } }
     };
 
     const imperial = {
-        mass: [{ s: 'lb', name: 'pounds' }, { s: 'oz', name: 'ounces', ratio: 16 }],
-        length: [{ s: 'in', name: 'inches' }, { s: 'ft', name: 'feet', ratio: 0.0833 }, { s: 'mi', name: 'miles', ratio: 0.00001578 }],
-        volume: [{ s: 'gal', name: 'gallons' }]
+        mass: [{ s: 'lb', r: 1 }, { s: 'oz', r: 16 }],
+        length: [{ s: 'in', r: 1 }, { s: 'ft', r: 1/12 }, { s: 'mi', r: 1/63360 }],
+        volume: [{ s: 'gal', r: 1 }]
     };
 
-    function countSigFigs(numStr) {
-        let n = numStr.replace('.', '').replace(/^-/, '');
-        if (numStr.includes('.')) {
-            n = n.replace(/^0+/, ''); 
-            return n.length;
-        } else {
-            return n.replace(/0+$/, '').replace(/^0+/, '').length;
-        }
+    function countSigFigs(n) {
+        let s = n.toString().replace('.', '').replace(/^-/, '');
+        if (n.toString().includes('.')) return s.replace(/^0+/, '').length;
+        return s.replace(/0+$/, '').replace(/^0+/, '').length;
     }
 
-    function formatSigFigs(num, target) {
-        if (num === 0) return "0";
-        let out = Number(num).toPrecision(target);
-        // Convert to LaTeX scientific notation if 'e' is present
-        if (out.includes('e')) {
-            let [base, exp] = out.split('e');
-            exp = exp.replace('+', '');
-            return `${base} \\times 10^{${exp}}`;
+    function formatSF(num, target) {
+        let res = Number(num).toPrecision(target);
+        if (res.includes('e')) {
+            let [b, e] = res.split('e');
+            return `${b} \\times 10^{${e.replace('+', '')}}`;
         }
-        return out;
+        return res;
     }
 
-    function setMode(mode, event) {
+    function setMode(mode, e) {
         currentMode = mode;
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        if(event) event.target.classList.add('active');
-        document.getElementById('topic-title').innerText = event ? event.target.innerText : "Practice";
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
         document.getElementById('gen-btn').style.display = 'inline-block';
         document.getElementById('check-btn').style.display = 'inline-block';
         generateProblem();
@@ -252,97 +123,57 @@
 
     function generateProblem() {
         document.getElementById('answer-display').classList.add('hidden');
+        const sf = Math.floor(Math.random() * 2) + 3; // 3 or 4 sig figs
+        let val = (Math.random() * 90 + 10).toPrecision(sf);
         
-        const sigFigs = Math.floor(Math.random() * 3) + 2; 
-        let rawVal = (Math.random() * 90 + 10).toPrecision(sigFigs);
-        
-        const cats = Object.keys(bases);
-        const cat = cats[Math.floor(Math.random() * cats.length)];
-        const baseUnit = bases[cat].s;
-        
-        let startUnit, endUnit, topRow = [], botRow = [];
-        let runningVal = parseFloat(rawVal);
+        const cat = ['mass', 'length', 'volume'][Math.floor(Math.random()*3)];
+        const b = bases[cat];
+        let start, end, top = [], bot = [], run = parseFloat(val);
 
         if (currentMode === 'single') {
-            let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
-            let p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
-            while(p1 === p2) p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
-            
-            startUnit = p1.symbol + baseUnit;
-            endUnit = p2.symbol + baseUnit;
-
-            // Tracks: [Value StartUnit] | [10^x Base] | [1 EndUnit]
-            //         ---------------------------------------------
-            //                      | [1 StartUnit] | [10^y Base]
-            topRow = [`${rawVal} \\text{ ${startUnit}}`, `10^{${Math.log10(p1.factor)}} \\text{ ${baseUnit}}`, `1 \\text{ ${endUnit}}` ];
-            botRow = [``, `1 \\text{ ${startUnit}}`, `10^{${Math.log10(p2.factor)}} \\text{ ${baseUnit}}` ];
-            
-            runningVal = (runningVal * p1.factor) / p2.factor;
-
-        } else if (currentMode === 'multi') {
-            let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
-            let imp = imperial[cat][Math.floor(Math.random() * imperial[cat].length)];
-            
-            startUnit = p1.symbol + baseUnit;
-            endUnit = imp.s;
-
-            topRow = [`${rawVal} \\text{ ${startUnit}}`, `10^{${Math.log10(p1.factor)}} \\text{ ${baseUnit}}`, `${bases[cat].bridge.val} \\text{ ${bases[cat].bridge.to}}` ];
-            botRow = [``, `1 \\text{ ${startUnit}}`, `1 \\text{ ${baseUnit}}` ];
-            runningVal = runningVal * p1.factor * bases[cat].bridge.val;
-
-            if (imp.s !== bases[cat].bridge.to) {
-                topRow.push(`1 \\text{ ${imp.s}}`);
-                botRow.push(`${imp.ratio} \\text{ ${bases[cat].bridge.to}}`);
-                runningVal /= imp.ratio;
+            let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
+            let p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
+            while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
+            start = p1.s + b.s; end = p2.s + b.s;
+            top = [`${val} \\text{ ${start}}`, `10^{${Math.log10(p1.f)}} \\text{ ${b.s}}`, `1 \\text{ ${end}}` ];
+            bot = [` `, `1 \\text{ ${start}}`, `10^{${Math.log10(p2.f)}} \\text{ ${b.s}}` ];
+            run = (run * p1.f) / p2.f;
+        } else {
+            // Logic for Multi (Imperial)
+            let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
+            let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
+            start = p1.s + b.s; end = imp.s;
+            top = [`${val} \\text{ ${start}}`, `10^{${Math.log10(p1.f)}} \\text{ ${b.s}}`, `${b.bridge.val} \\text{ ${b.bridge.to}}` ];
+            bot = [` `, `1 \\text{ ${start}}`, `1 \\text{ ${b.s}}` ];
+            run = run * p1.f * b.bridge.val;
+            if (imp.s !== b.bridge.to) {
+                top.push(`1 \\text{ ${imp.s}}`);
+                bot.push(`${imp.r} \\text{ ${b.bridge.to}}`);
+                run /= imp.r;
             }
-        } else if (currentMode === 'double') {
-            let p1 = prefixes[Math.floor(Math.random() * 4)];
-            let p2 = prefixes[Math.floor(Math.random() * 4)];
-            startUnit = `${p1.symbol}${baseUnit}/hr`;
-            endUnit = `${p2.symbol}${baseUnit}/s`;
-
-            topRow = [`${rawVal} \\text{ ${p1.symbol}${baseUnit}}`, `10^{${Math.log10(p1.factor)}} \\text{ ${baseUnit}}`, `1 \\text{ ${p2.symbol}${baseUnit}}`, `1 \\text{ hr}`];
-            botRow = [`1 \\text{ hr}`, `1 \\text{ ${p1.symbol}${baseUnit}}`, `10^{${Math.log10(p2.factor)}} \\text{ ${baseUnit}}`, `3600 \\text{ s}`];
-            
-            runningVal = (runningVal * p1.factor) / p2.factor / 3600;
         }
 
-        currentProblem = {
-            val: rawVal,
-            start: startUnit,
-            end: endUnit,
-            ans: formatSigFigs(runningVal, sigFigs),
-            top: topRow,
-            bot: botRow
-        };
-
-        document.getElementById('problem-text').innerHTML = `Convert <strong>${rawVal} ${startUnit}</strong> to <strong>${endUnit}</strong>.`;
+        currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
+        document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
     }
 
     function toggleAnswer() {
         const div = document.getElementById('answer-display');
-        if (!div.classList.contains('hidden')) {
-            div.classList.add('hidden');
-            return;
-        }
+        if (!div.classList.contains('hidden')) { div.classList.add('hidden'); return; }
 
-        // Build the "Railroad Track" Array
-        // We use backticks (`) here so the ${variable} syntax actually works!
-        let colCount = currentProblem.top.length;
-        let colDef = "|".repeat(colCount + 1).split("").join("c");
-        
-        // Use double backslashes for LaTeX commands so JS doesn't "eat" them
-        let latex = `$$ \\renewcommand{\\arraystretch}{1.5} \\begin{array}{${colDef}} `;
-        latex += currentProblem.top.join(" & ") + " \\\\ \\hline ";
-        latex += currentProblem.bot.join(" & ") + ` \\end{array} = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$`;
+        let cols = currentProblem.top.length;
+        let grid = "|".repeat(cols + 1).split("").join("c");
+        let latex = `$$ \\begin{array}{${grid}} ${currentProblem.top.join(" & ")} \\\\ \\hline ${currentProblem.bot.join(" & ")} \\end{array} = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$`;
 
-        div.innerHTML = `<div style="text-align:left; margin-bottom:10px;"><strong>Dimensional Analysis Setup:</strong></div> ${latex}`;
+        div.innerHTML = `<strong>Setup:</strong><br>${latex}`;
         div.classList.remove('hidden');
+        
+        if(window.MathJax) MathJax.typesetPromise([div]);
+    }
 
-        // Tell MathJax to look at the new content
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            MathJax.typesetPromise([div]).catch((err) => console.log(err));
-        }
+    function toggleRef(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 </script>
 
