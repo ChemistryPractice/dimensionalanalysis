@@ -194,86 +194,156 @@
 
 <script>
     let currentMode = '';
-    let currentAnswer = '';
+    let currentProblem = null;
 
-    const units = {
-        length: [
-            { n: 'meters', s: 'm', v: 1 },
-            { n: 'kilometers', s: 'km', v: 1000 },
-            { n: 'centimeters', s: 'cm', v: 0.01 },
-            { n: 'millimeters', s: 'mm', v: 0.001 },
-            { n: 'inches', s: 'in', v: 0.0254 },
-            { n: 'miles', s: 'mi', v: 1609.34 },
-            { n: 'feet', s: 'ft', v: 0.3048 }
-        ],
-        mass: [
-            { n: 'grams', s: 'g', v: 1 },
-            { n: 'kilograms', s: 'kg', v: 1000 },
-            { n: 'milligrams', s: 'mg', v: 0.001 },
-            { n: 'centigrams', s: 'cg', v: 0.01 },
-            { n: 'pounds', s: 'lb', v: 453.59 },
-            { n: 'ounces', s: 'oz', v: 28.35 }
-        ],
-        time: [
-            { n: 'seconds', s: 's', v: 1 },
-            { n: 'minutes', s: 'min', v: 60 },
-            { n: 'hours', s: 'hr', v: 3600 }
-        ]
+    // Unit Definitions & Bridges
+    const prefixes = [
+        { name: 'mega', symbol: 'M', factor: 1e6 },
+        { name: 'kilo', symbol: 'k', factor: 1e3 },
+        { name: '', symbol: '', factor: 1 },
+        { name: 'centi', symbol: 'c', factor: 1e-2 },
+        { name: 'milli', symbol: 'm', factor: 1e-3 },
+        { name: 'micro', symbol: 'μ', factor: 1e-6 },
+        { name: 'nano', symbol: 'n', factor: 1e-9 },
+        { name: 'pico', symbol: 'p', factor: 1e-12 }
+    ];
+
+    const bases = {
+        mass: { unit: 'grams', s: 'g', type: 'metric', bridge: { to: 'lb', val: 0.00220462 } },
+        length: { unit: 'meters', s: 'm', type: 'metric', bridge: { to: 'in', val: 39.3701 } },
+        volume: { unit: 'Liters', s: 'L', type: 'metric', bridge: { to: 'gal', val: 0.264172 } }
     };
+
+    const imperial = {
+        mass: [{ s: 'lb', name: 'pounds' }, { s: 'oz', name: 'ounces', ratio: 16 }], // 16 oz = 1 lb
+        length: [{ s: 'in', name: 'inches' }, { s: 'ft', name: 'feet', ratio: 1/12 }, { s: 'mi', name: 'miles', ratio: 1/5280 }],
+        volume: [{ s: 'gal', name: 'gallons' }]
+    };
+
+    // --- Utility Functions ---
+
+    function countSigFigs(numStr) {
+        let n = numStr.replace('.', '').replace(/^-/, '');
+        if (numStr.includes('.')) {
+            n = n.replace(/^0+/, ''); 
+            return n.length;
+        } else {
+            return n.replace(/0+$/, '').replace(/^0+/, '').length;
+        }
+    }
+
+    function formatSigFigs(num, target) {
+        return Number(num).toPrecision(target);
+    }
+
+    // --- Core Logic ---
 
     function setMode(mode, event) {
         currentMode = mode;
-        
-        // UI Updates
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById('topic-title').innerText = event.target.innerText;
-        document.getElementById('gen-btn').style.display = 'block';
-        document.getElementById('check-btn').style.display = 'block';
-        
+        if(event) event.target.classList.add('active');
+        document.getElementById('topic-title').innerText = event ? event.target.innerText : "Practice";
+        document.getElementById('gen-btn').style.display = 'inline-block';
+        document.getElementById('check-btn').style.display = 'inline-block';
         generateProblem();
     }
 
     function generateProblem() {
         document.getElementById('answer-display').classList.add('hidden');
-        let val = (Math.random() * 500 + 1).toFixed(2);
-        let pText = "";
         
-        if (currentMode === 'single' || currentMode === 'multi') {
-            // Pick a category (Length or Mass)
-            const cat = Math.random() > 0.5 ? 'length' : 'mass';
-            const pool = units[cat];
-            
-            let u1 = pool[Math.floor(Math.random() * pool.length)];
-            let u2 = pool[Math.floor(Math.random() * pool.length)];
-            
-            while(u1 === u2) u2 = pool[Math.floor(Math.random() * pool.length)];
+        // 1. Pick a random value and determine sig figs
+        const dec = Math.floor(Math.random() * 3); 
+        let rawVal = (Math.random() * 90 + 10).toFixed(dec);
+        const sigFigs = countSigFigs(rawVal);
 
-            const result = (val * u1.v) / u2.v;
-            pText = `Convert **${val} ${u1.s}** to **${u2.s}**`;
-            currentAnswer = `${result.toLocaleString(undefined, {maximumFractionDigits: 4})} ${u2.s}`;
+        // 2. Pick Category (Mass, Length, Volume)
+        const cats = Object.keys(bases);
+        const cat = cats[Math.floor(Math.random() * cats.length)];
+        
+        let startUnit, endUnit, setupSteps = [];
+        let finalValue = parseFloat(rawVal);
+
+        if (currentMode === 'single') {
+            // Metric to Metric
+            let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            let p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            while(p1 === p2) p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            
+            startUnit = p1.symbol + bases[cat].s;
+            endUnit = p2.symbol + bases[cat].s;
+
+            // Setup: Val * (1 Base / Prefix1) * (Prefix2 / 1 Base)
+            finalValue = (finalValue * p1.factor) / p2.factor;
+            setupSteps.push(`\\frac{1 \\text{ ${bases[cat].s}}}{${p1.factor} \\text{ ${startUnit}}}`);
+            setupSteps.push(`\\frac{${1/p2.factor} \\text{ ${endUnit}}}{1 \\text{ ${bases[cat].s}}}`);
+
+        } else if (currentMode === 'multi') {
+            // Metric Prefix to Imperial
+            let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            let imp = imperial[cat][Math.floor(Math.random() * imperial[cat].length)];
+            
+            startUnit = p1.symbol + bases[cat].s;
+            endUnit = imp.s;
+
+            // Math: Val -> Base -> Bridge -> Imperial
+            let valInBase = finalValue * p1.factor;
+            let bridgeVal = bases[cat].bridge.val;
+            finalValue = valInBase * bridgeVal; 
+            
+            setupSteps.push(`\\frac{1 \\text{ ${bases[cat].s}}}{${1/p1.factor} \\text{ ${startUnit}}}`);
+            setupSteps.push(`\\frac{${bridgeVal} \\text{ ${bases[cat].bridge.to}}}{1 \\text{ ${bases[cat].s}}}`);
+            
+            if(imp.ratio) {
+                finalValue /= imp.ratio;
+                setupSteps.push(`\\frac{1 \\text{ ${imp.s}}}{${imp.ratio} \\text{ ${bases[cat].bridge.to}}}`);
+            }
 
         } else if (currentMode === 'double') {
-            // Rates (Distance/Time)
-            const lPool = units.length;
-            const tPool = units.time;
-            
-            let l1 = lPool[Math.floor(Math.random() * lPool.length)];
-            let l2 = lPool[Math.floor(Math.random() * lPool.length)];
-            let t1 = tPool[Math.floor(Math.random() * tPool.length)];
-            let t2 = tPool[Math.floor(Math.random() * tPool.length)];
+            // Rate conversion: e.g., km/hr to m/s
+            let p1 = prefixes[Math.floor(Math.random() * 4)]; // Mega to Centi
+            let p2 = prefixes[Math.floor(Math.random() * 4)];
+            startUnit = `${p1.symbol}m/hr`;
+            endUnit = `${p2.symbol}m/s`;
 
-            const result = (val * (l1.v / t1.v)) / (l2.v / t2.v);
-            pText = `Convert **${val} ${l1.s}/${t1.s}** to **${l2.s}/${t2.s}**`;
-            currentAnswer = `${result.toLocaleString(undefined, {maximumFractionDigits: 4})} ${l2.s}/${t2.s}`;
+            finalValue = (finalValue * p1.factor) / p2.factor / 3600;
+            
+            setupSteps.push(`\\frac{10^{${Math.log10(p1.factor)}} \\text{ m}}{1 \\text{ ${p1.symbol}m}}`);
+            setupSteps.push(`\\frac{1 \\text{ ${p2.symbol}m}}{10^{${Math.log10(p2.factor)}} \\text{ m}}`);
+            setupSteps.push(`\\frac{1 \\text{ hr}}{3600 \\text{ s}}`);
         }
 
-        document.getElementById('problem-text').innerHTML = pText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        document.getElementById('answer-display').innerHTML = `Final Answer: ${currentAnswer}`;
+        currentProblem = {
+            val: rawVal,
+            start: startUnit,
+            end: endUnit,
+            ans: formatSigFigs(finalValue, sigFigs),
+            setup: setupSteps
+        };
+
+        document.getElementById('problem-text').innerHTML = `Convert <strong>${rawVal} ${startUnit}</strong> to <strong>${endUnit}</strong>.`;
     }
 
     function toggleAnswer() {
-        document.getElementById('answer-display').classList.toggle('hidden');
+        const div = document.getElementById('answer-display');
+        if (!div.classList.contains('hidden')) {
+            div.classList.add('hidden');
+            return;
+        }
+
+        // Build LaTeX string for setup
+        let latex = `$$ ${currentProblem.val} \\text{ ${currentProblem.start}} `;
+        currentProblem.setup.forEach(step => {
+            latex += ` \\times ${step}`;
+        });
+        latex += ` = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$`;
+
+        div.innerHTML = `<strong>Solution Setup:</strong><br>${latex}`;
+        div.classList.remove('hidden');
+
+        // Trigger MathJax re-render
+        if (window.MathJax) {
+            MathJax.typesetPromise();
+        }
     }
 
     function toggleRef(id) {
