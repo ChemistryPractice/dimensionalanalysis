@@ -327,18 +327,21 @@
         }
 
         // Build the "Railroad Track" Array
+        // We use backticks (`) here so the ${variable} syntax actually works!
         let colCount = currentProblem.top.length;
         let colDef = "|".repeat(colCount + 1).split("").join("c");
         
-        let latex = `$$ \\begin{array}{${colDef}} `;
+        // Use double backslashes for LaTeX commands so JS doesn't "eat" them
+        let latex = `$$ \\renewcommand{\\arraystretch}{1.5} \\begin{array}{${colDef}} `;
         latex += currentProblem.top.join(" & ") + " \\\\ \\hline ";
-        latex += currentProblem.bot.join(" & ") + " \\end{array} = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$";
+        latex += currentProblem.bot.join(" & ") + ` \\end{array} = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$`;
 
         div.innerHTML = `<div style="text-align:left; margin-bottom:10px;"><strong>Dimensional Analysis Setup:</strong></div> ${latex}`;
         div.classList.remove('hidden');
 
-        if (window.MathJax) {
-            MathJax.typesetPromise([div]);
+        // Tell MathJax to look at the new content
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise([div]).catch((err) => console.log(err));
         }
     }
 </script>
