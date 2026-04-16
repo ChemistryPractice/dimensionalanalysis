@@ -3,37 +3,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dimensional Analysis Practice</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Dimensional Analysis Hub</title>
+
+    <style>
+        :root { 
+            --primary: #2c3e50; 
+            --accent: #27ae60; 
+            --error: #c0392b; 
+            --bg: #f4f7f6; 
+            --sidebar-w: 260px; 
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* Sidebar */
+        #sidebar { 
+            width: var(--sidebar-w); 
+            background: var(--primary); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+        }
+
+        #sidebar h2 { text-align: center; margin-bottom: 20px; }
+
+        .nav-btn { 
+            background: none; 
+            border: 1px solid #455a64; 
+            color: white; 
+            padding: 12px; 
+            margin-bottom: 8px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover { background: #34495e; }
+        .nav-btn.active { background: var(--accent); border-color: var(--accent); }
+
+        .ref-group { 
+            margin-top: auto; 
+            border-top: 1px solid #455a64; 
+            padding-top: 20px; 
+        }
+
+        .ref-btn { background: #7f8c8d; }
+
+        /* Main Content */
+        #main-content { 
+            flex-grow: 1; 
+            padding: 40px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            overflow-y: auto;
+        }
+
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            width: 100%; 
+            max-width: 750px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Problem container */
+        #problem-area {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            margin-top: 30px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .answer-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-left: 5px solid var(--accent);
+            border-radius: 5px;
+            font-weight: bold;
+            color: var(--primary);
+            width: 80%;
+        }
+
+        .hidden { display: none; }
+
+        /* Overlay tools */
+        .overlay { 
+            display: none; 
+            position: fixed; 
+            top: 5%; 
+            left: 280px; 
+            right: 20px; 
+            bottom: 5%; 
+            background: white; 
+            border-radius: 10px; 
+            z-index: 100; 
+            padding: 20px; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        .overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .close-btn { background: var(--error); color: white; border: none; padding: 5px 15px; cursor: pointer; border-radius: 3px; }
+    </style>
 </head>
+
 <body>
 
-    <div class="app-container">
-        <aside class="sidebar">
-            <h2>Conversion Types</h2>
-            <button onclick="setMode('single')">Single-Step</button>
-            <button onclick="setMode('multi')">Multi-Step</button>
-            <button onclick="setMode('double')">Double Conversions</button>
-        </aside>
+<div id="sidebar">
+    <h2>Dimensional Analysis</h2>
 
-        <main class="content">
-            <div id="problem-container">
-                <h1 id="mode-title">Select a mode to begin</h1>
-                <div id="problem-display" class="problem-box">
-                    Click "New Problem" to generate a challenge.
-                </div>
-                
-                <div class="button-group">
-                    <button id="new-btn" onclick="generateProblem()">New Problem</button>
-                    <button id="check-btn" onclick="toggleAnswer()">Check Answer</button>
-                </div>
+    <button class="nav-btn" onclick="setMode('single', event)">
+        Single-Step Conversions
+    </button>
 
-                <div id="answer-display" class="answer-box hidden">
-                    </div>
-            </div>
-        </main>
+    <button class="nav-btn" onclick="setMode('multi', event)">
+        Multi-Step (Metric/Imperial)
+    </button>
+
+    <button class="nav-btn" onclick="setMode('double', event)">
+        Double Conversions (Rates)
+    </button>
+
+    <div class="ref-group">
+        <button class="nav-btn ref-btn" onclick="toggleRef('calc')">Calculator</button>
+        <button class="nav-btn ref-btn" onclick="toggleRef('ptable')">Periodic Table</button>
+        <button class="nav-btn ref-btn" onclick="toggleRef('eqn')">Equation Sheet</button>
     </div>
+</div>
 
-    <script src="script.js"></script>
+<div id="main-content">
+    <div class="card">
+        <h1 id="topic-title">Conversion Practice</h1>
+
+        <div id="instruction-box" style="background: #e8f4fd; padding: 15px; border-left: 5px solid #3498db; margin-bottom: 20px; border-radius: 5px;">
+            <strong>How to use this hub:</strong>
+            <ol style="margin-top: 10px; padding-left: 20px;">
+                <li>Select a conversion type from the sidebar.</li>
+                <li>Click <strong>"New Problem"</strong> to generate a challenge.</li>
+                <li>Solve the problem on your own paper using the factor-label method.</li>
+                <li>Click <strong>"Check Answer"</strong> to verify your result.</li>
+            </ol>
+        </div>
+
+        <div id="problem-area">
+            <p id="problem-text" style="color: #7f8c8d;">Select a mode from the sidebar to begin.</p>
+            
+            <div id="answer-display" class="answer-box hidden"></div>
+
+            <div style="margin-top: 30px; display: flex; gap: 10px;">
+                <button id="gen-btn" class="nav-btn" style="background: var(--accent); padding: 15px 30px; font-weight: bold; display: none;" onclick="generateProblem()">
+                    Generate New Problem
+                </button>
+                <button id="check-btn" class="nav-btn" style="background: var(--primary); padding: 15px 30px; font-weight: bold; display: none;" onclick="toggleAnswer()">
+                    Check Answer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="calc" class="overlay">
+    <div class="overlay-header"><h3>Calculator</h3><button class="close-btn" onclick="toggleRef('calc')">X</button></div>
+    <iframe src="https://www.desmos.com/scientific" width="100%" height="90%"></iframe>
+</div>
+
+<div id="ptable" class="overlay">
+    <div class="overlay-header"><h3>Periodic Table</h3><button class="close-btn" onclick="toggleRef('ptable')">X</button></div>
+    <iframe src="https://ptable.com" width="100%" height="90%"></iframe>
+</div>
+
+<div id="eqn" class="overlay">
+    <div class="overlay-header"><h3>Equation Sheet</h3><button class="close-btn" onclick="toggleRef('eqn')">X</button></div>
+    <object data="Equation_Sheet2.pdf" type="application/pdf" width="100%" height="90%"></object>
+</div>
+
+<script>
+    let currentMode = '';
+    let currentAnswer = '';
+
+    const units = {
+        length: [
+            { n: 'meters', s: 'm', v: 1 },
+            { n: 'kilometers', s: 'km', v: 1000 },
+            { n: 'centimeters', s: 'cm', v: 0.01 },
+            { n: 'millimeters', s: 'mm', v: 0.001 },
+            { n: 'inches', s: 'in', v: 0.0254 },
+            { n: 'miles', s: 'mi', v: 1609.34 },
+            { n: 'feet', s: 'ft', v: 0.3048 }
+        ],
+        mass: [
+            { n: 'grams', s: 'g', v: 1 },
+            { n: 'kilograms', s: 'kg', v: 1000 },
+            { n: 'milligrams', s: 'mg', v: 0.001 },
+            { n: 'centigrams', s: 'cg', v: 0.01 },
+            { n: 'pounds', s: 'lb', v: 453.59 },
+            { n: 'ounces', s: 'oz', v: 28.35 }
+        ],
+        time: [
+            { n: 'seconds', s: 's', v: 1 },
+            { n: 'minutes', s: 'min', v: 60 },
+            { n: 'hours', s: 'hr', v: 3600 }
+        ]
+    };
+
+    function setMode(mode, event) {
+        currentMode = mode;
+        
+        // UI Updates
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('topic-title').innerText = event.target.innerText;
+        document.getElementById('gen-btn').style.display = 'block';
+        document.getElementById('check-btn').style.display = 'block';
+        
+        generateProblem();
+    }
+
+    function generateProblem() {
+        document.getElementById('answer-display').classList.add('hidden');
+        let val = (Math.random() * 500 + 1).toFixed(2);
+        let pText = "";
+        
+        if (currentMode === 'single' || currentMode === 'multi') {
+            // Pick a category (Length or Mass)
+            const cat = Math.random() > 0.5 ? 'length' : 'mass';
+            const pool = units[cat];
+            
+            let u1 = pool[Math.floor(Math.random() * pool.length)];
+            let u2 = pool[Math.floor(Math.random() * pool.length)];
+            
+            while(u1 === u2) u2 = pool[Math.floor(Math.random() * pool.length)];
+
+            const result = (val * u1.v) / u2.v;
+            pText = `Convert **${val} ${u1.s}** to **${u2.s}**`;
+            currentAnswer = `${result.toLocaleString(undefined, {maximumFractionDigits: 4})} ${u2.s}`;
+
+        } else if (currentMode === 'double') {
+            // Rates (Distance/Time)
+            const lPool = units.length;
+            const tPool = units.time;
+            
+            let l1 = lPool[Math.floor(Math.random() * lPool.length)];
+            let l2 = lPool[Math.floor(Math.random() * lPool.length)];
+            let t1 = tPool[Math.floor(Math.random() * tPool.length)];
+            let t2 = tPool[Math.floor(Math.random() * tPool.length)];
+
+            const result = (val * (l1.v / t1.v)) / (l2.v / t2.v);
+            pText = `Convert **${val} ${l1.s}/${t1.s}** to **${l2.s}/${t2.s}**`;
+            currentAnswer = `${result.toLocaleString(undefined, {maximumFractionDigits: 4})} ${l2.s}/${t2.s}`;
+        }
+
+        document.getElementById('problem-text').innerHTML = pText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        document.getElementById('answer-display').innerHTML = `Final Answer: ${currentAnswer}`;
+    }
+
+    function toggleAnswer() {
+        document.getElementById('answer-display').classList.toggle('hidden');
+    }
+
+    function toggleRef(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+</script>
+
 </body>
 </html>
