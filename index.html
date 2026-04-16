@@ -1,1 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimensional Analysis Practice</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2>Conversion Types</h2>
+            <button onclick="setMode('single')">Single-Step</button>
+            <button onclick="setMode('multi')">Multi-Step</button>
+            <button onclick="setMode('double')">Double Conversions</button>
+        </aside>
+
+        <main class="content">
+            <div id="problem-container">
+                <h1 id="mode-title">Select a mode to begin</h1>
+                <div id="problem-display" class="problem-box">
+                    Click "New Problem" to generate a challenge.
+                </div>
+                
+                <div class="button-group">
+                    <button id="new-btn" onclick="generateProblem()">New Problem</button>
+                    <button id="check-btn" onclick="toggleAnswer()">Check Answer</button>
+                </div>
+
+                <div id="answer-display" class="answer-box hidden">
+                    </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
