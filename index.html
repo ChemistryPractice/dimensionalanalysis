@@ -193,10 +193,8 @@
 </div>
 
 <script>
-    let currentMode = '';
     let currentProblem = null;
 
-    // Unit Definitions & Bridges
     const prefixes = [
         { name: 'mega', symbol: 'M', factor: 1e6 },
         { name: 'kilo', symbol: 'k', factor: 1e3 },
@@ -216,11 +214,10 @@
 
     const imperial = {
         mass: [{ s: 'lb', name: 'pounds' }, { s: 'oz', name: 'ounces', ratio: 16 }],
-        length: [{ s: 'in', name: 'inches' }, { s: 'ft', name: 'feet', ratio: 0.08333 }, { s: 'mi', name: 'miles', ratio: 0.0000157828 }],
+        length: [{ s: 'in', name: 'inches' }, { s: 'ft', name: 'feet', ratio: 0.0833 }, { s: 'mi', name: 'miles', ratio: 0.00001578 }],
         volume: [{ s: 'gal', name: 'gallons' }]
     };
 
-    // --- Sig Fig Logic ---
     function countSigFigs(numStr) {
         let n = numStr.replace('.', '').replace(/^-/, '');
         if (numStr.includes('.')) {
@@ -232,13 +229,17 @@
     }
 
     function formatSigFigs(num, target) {
-        // Returns scientific notation if the number is very small/large
         if (num === 0) return "0";
         let out = Number(num).toPrecision(target);
-        return out.replace("e+", " \\times 10^{").replace("e-", " \\times 10^{-") + (out.includes("e") ? "}" : "");
+        // Convert to LaTeX scientific notation if 'e' is present
+        if (out.includes('e')) {
+            let [base, exp] = out.split('e');
+            exp = exp.replace('+', '');
+            return `${base} \\times 10^{${exp}}`;
+        }
+        return out;
     }
 
-    // --- Core UI Logic ---
     function setMode(mode, event) {
         currentMode = mode;
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -252,14 +253,14 @@
     function generateProblem() {
         document.getElementById('answer-display').classList.add('hidden');
         
-        // Pick a value with 2-4 sig figs
-        const sigFigs = Math.floor(Math.random() * 3) + 2;
-        let rawVal = (Math.random() * 99 + 1).toPrecision(sigFigs);
+        const sigFigs = Math.floor(Math.random() * 3) + 2; 
+        let rawVal = (Math.random() * 90 + 10).toPrecision(sigFigs);
         
         const cats = Object.keys(bases);
         const cat = cats[Math.floor(Math.random() * cats.length)];
+        const baseUnit = bases[cat].s;
         
-        let startUnit, endUnit, setupSteps = [];
+        let startUnit, endUnit, topRow = [], botRow = [];
         let runningVal = parseFloat(rawVal);
 
         if (currentMode === 'single') {
@@ -267,13 +268,14 @@
             let p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
             while(p1 === p2) p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
             
-            startUnit = p1.symbol + bases[cat].s;
-            endUnit = p2.symbol + bases[cat].s;
+            startUnit = p1.symbol + baseUnit;
+            endUnit = p2.symbol + baseUnit;
 
-            // Step 1: To Base
-            setupSteps.push(`\\left( \\frac{10^{${Math.log10(p1.factor)}} \\text{ ${bases[cat].s}}}{1 \\text{ ${startUnit}}} \\right)`);
-            // Step 2: To Target
-            setupSteps.push(`\\left( \\frac{1 \\text{ ${endUnit}}}{10^{${Math.log10(p2.factor)}} \\text{ ${bases[cat].s}}} \\right)`);
+            // Tracks: [Value StartUnit] | [10^x Base] | [1 EndUnit]
+            //         ---------------------------------------------
+            //                      | [1 StartUnit] | [10^y Base]
+            topRow = [`${rawVal} \\text{ ${startUnit}}`, `10^{${Math.log10(p1.factor)}} \\text{ ${baseUnit}}`, `1 \\text{ ${endUnit}}` ];
+            botRow = [``, `1 \\text{ ${startUnit}}`, `10^{${Math.log10(p2.factor)}} \\text{ ${baseUnit}}` ];
             
             runningVal = (runningVal * p1.factor) / p2.factor;
 
@@ -281,43 +283,37 @@
             let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
             let imp = imperial[cat][Math.floor(Math.random() * imperial[cat].length)];
             
-            startUnit = p1.symbol + bases[cat].s;
+            startUnit = p1.symbol + baseUnit;
             endUnit = imp.s;
 
-            // To Base
-            setupSteps.push(`\\left( \\frac{10^{${Math.log10(p1.factor)}} \\text{ ${bases[cat].s}}}{1 \\text{ ${startUnit}}} \\right)`);
-            runningVal *= p1.factor;
-            
-            // To Imperial Bridge
-            setupSteps.push(`\\left( \\frac{${bases[cat].bridge.val} \\text{ ${bases[cat].bridge.to}}}{1 \\text{ ${bases[cat].s}}} \\right)`);
-            runningVal *= bases[cat].bridge.val;
-            
-            // To specific imperial unit if needed (e.g. lb to oz)
+            topRow = [`${rawVal} \\text{ ${startUnit}}`, `10^{${Math.log10(p1.factor)}} \\text{ ${baseUnit}}`, `${bases[cat].bridge.val} \\text{ ${bases[cat].bridge.to}}` ];
+            botRow = [``, `1 \\text{ ${startUnit}}`, `1 \\text{ ${baseUnit}}` ];
+            runningVal = runningVal * p1.factor * bases[cat].bridge.val;
+
             if (imp.s !== bases[cat].bridge.to) {
-                setupSteps.push(`\\left( \\frac{1 \\text{ ${imp.s}}}{${imp.ratio} \\text{ ${bases[cat].bridge.to}}} \\right)`);
+                topRow.push(`1 \\text{ ${imp.s}}`);
+                botRow.push(`${imp.ratio} \\text{ ${bases[cat].bridge.to}}`);
                 runningVal /= imp.ratio;
             }
-
         } else if (currentMode === 'double') {
-            let p1 = prefixes[Math.floor(Math.random() * 5)];
-            let p2 = prefixes[Math.floor(Math.random() * 5)];
-            startUnit = `${p1.symbol}${bases[cat].s}/hr`;
-            endUnit = `${p2.symbol}${bases[cat].s}/s`;
+            let p1 = prefixes[Math.floor(Math.random() * 4)];
+            let p2 = prefixes[Math.floor(Math.random() * 4)];
+            startUnit = `${p1.symbol}${baseUnit}/hr`;
+            endUnit = `${p2.symbol}${baseUnit}/s`;
 
-            setupSteps.push(`\\left( \\frac{10^{${Math.log10(p1.factor)}} \\text{ ${bases[cat].s}}}{1 \\text{ ${p1.symbol}${bases[cat].s}}} \\right)`);
-            setupSteps.push(`\\left( \\frac{1 \\text{ ${p2.symbol}${bases[cat].s}}}{10^{${Math.log10(p2.factor)}} \\text{ ${bases[cat].s}}} \\right)`);
-            setupSteps.push(`\\left( \\frac{1 \\text{ hr}}{3600 \\text{ s}} \\right)`);
+            topRow = [`${rawVal} \\text{ ${p1.symbol}${baseUnit}}`, `10^{${Math.log10(p1.factor)}} \\text{ ${baseUnit}}`, `1 \\text{ ${p2.symbol}${baseUnit}}`, `1 \\text{ hr}`];
+            botRow = [`1 \\text{ hr}`, `1 \\text{ ${p1.symbol}${baseUnit}}`, `10^{${Math.log10(p2.factor)}} \\text{ ${baseUnit}}`, `3600 \\text{ s}`];
             
             runningVal = (runningVal * p1.factor) / p2.factor / 3600;
         }
 
         currentProblem = {
             val: rawVal,
-            sigFigs: sigFigs,
             start: startUnit,
             end: endUnit,
             ans: formatSigFigs(runningVal, sigFigs),
-            setup: setupSteps
+            top: topRow,
+            bot: botRow
         };
 
         document.getElementById('problem-text').innerHTML = `Convert <strong>${rawVal} ${startUnit}</strong> to <strong>${endUnit}</strong>.`;
@@ -330,25 +326,20 @@
             return;
         }
 
-        // Build LaTeX string with double backslashes for JS safety
-        let latex = `$$ ${currentProblem.val} \\text{ ${currentProblem.start}} `;
-        currentProblem.setup.forEach(step => {
-            latex += ` \\times ${step}`;
-        });
-        latex += ` = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$`;
+        // Build the "Railroad Track" Array
+        let colCount = currentProblem.top.length;
+        let colDef = "|".repeat(colCount + 1).split("").join("c");
+        
+        let latex = `$$ \\begin{array}{${colDef}} `;
+        latex += currentProblem.top.join(" & ") + " \\\\ \\hline ";
+        latex += currentProblem.bot.join(" & ") + " \\end{array} = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$";
 
-        div.innerHTML = `<div style="text-align:left;"><strong>Dimensional Analysis Setup:</strong></div>${latex}`;
+        div.innerHTML = `<div style="text-align:left; margin-bottom:10px;"><strong>Dimensional Analysis Setup:</strong></div> ${latex}`;
         div.classList.remove('hidden');
 
-        // Re-render MathJax
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            MathJax.typesetPromise([div]).catch((err) => console.log(err));
+        if (window.MathJax) {
+            MathJax.typesetPromise([div]);
         }
-    }
-
-    function toggleRef(id) {
-        const el = document.getElementById(id);
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 </script>
 
