@@ -168,47 +168,41 @@
         }
         run = run / p2.f; // Mathematically convert to target
 
-    } else if (currentMode === 'multi') {
-        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-        let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
-        start = p1.s + b.s; 
-        end = imp.s;
+    } else if (currentMode === 'double') {
+        // We will default to Length/Time (e.g., m/hr to km/s)
+        const b = bases.length; 
+        const sf = Math.floor(Math.random() * 2) + 3;
+        let val = (Math.random() * 90 + 10).toPrecision(sf);
+        let run = parseFloat(val);
+
+        let p1 = prefixes[Math.floor(Math.random() * 4)]; // Pick larger/common prefixes
+        let p2 = prefixes[Math.floor(Math.random() * 4)];
         
-        top.push(`${val} \\text{ ${start}}`);
-        bot.push(` `);
+        start = `${p1.s}${b.s}/hr`;
+        end = `${p2.s}${b.s}/s`;
 
-        // Metric Prefix to Base (using Big-is-1 logic)
-        if (p1.f >= 1) {
-            top.push(`${p1.f} \\text{ ${b.s}}`);
-            bot.push(`1 \\text{ ${start}}`);
+        top.push(`${val} \\text{ ${p1.s}${b.s}}`);
+        bot.push(`1 \\text{ hr}`);
+
+        // 1. Distance Conversion (Numerator) - Big Unit gets the 1
+        if (p1.f >= p2.f) {
+            // p1 is larger (e.g., km to m) -> 1 km = 1000 m
+            top.push(`${p1.f / p2.f} \\text{ ${p2.s}${b.s}}`);
+            bot.push(`1 \\text{ ${p1.s}${b.s}}`);
         } else {
-            top.push(`1 \\text{ ${b.s}}`);
-            bot.push(`${1 / p1.f} \\text{ ${start}}`);
+            // p2 is larger (e.g., m to km) -> 1 km = 1000 m
+            top.push(`1 \\text{ ${p2.s}${b.s}}`);
+            bot.push(`${p2.f / p1.f} \\text{ ${p1.s}${b.s}}`);
         }
-        run = run * p1.f;
+        run = (run * p1.f) / p2.f;
 
-        // Base to Imperial Bridge (Bridge is usually 1 of the imperial unit)
-        top.push(`${b.bridge.val} \\text{ ${b.bridge.to}}`);
-        bot.push(`1 \\text{ ${b.s}}`);
-        run = run * b.bridge.val;
+        // 2. Time Conversion (Denominator) - 1 hr = 3600 s
+        top.push(`1 \\text{ hr}`);
+        bot.push(`3600 \\text{ s}`);
+        run = run / 3600;
 
-        // Imperial to Imperial (e.g., lb to oz)
-        if (imp.s !== b.bridge.to) {
-            // Logic: 1 lb = 16 oz
-            if (imp.r > 1) {
-                top.push(`${imp.r} \\text{ ${imp.s}}`);
-                bot.push(`1 \\text{ ${b.bridge.to}}`);
-                run = run * imp.r;
-            } else {
-                top.push(`1 \\text{ ${imp.s}}`);
-                bot.push(`${1/imp.r} \\text{ ${b.bridge.to}}`);
-                run = run * imp.r;
-            }
-        }
-    }
-
-    currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
-    document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
+        currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
+        document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
 }
 
     function toggleAnswer() {
