@@ -122,40 +122,94 @@
     }
 
     function generateProblem() {
-        document.getElementById('answer-display').classList.add('hidden');
-        const sf = Math.floor(Math.random() * 2) + 3; // 3 or 4 sig figs
-        let val = (Math.random() * 90 + 10).toPrecision(sf);
-        
-        const cat = ['mass', 'length', 'volume'][Math.floor(Math.random()*3)];
-        const b = bases[cat];
-        let start, end, top = [], bot = [], run = parseFloat(val);
+    document.getElementById('answer-display').classList.add('hidden');
+    const sf = Math.floor(Math.random() * 2) + 3; // 3 or 4 sig figs
+    let val = (Math.random() * 90 + 10).toPrecision(sf);
+    
+    const cat = ['mass', 'length', 'volume'][Math.floor(Math.random()*3)];
+    const b = bases[cat];
+    let start, end, top = [], bot = [], run = parseFloat(val);
 
-        if (currentMode === 'single') {
-            let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            let p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            start = p1.s + b.s; end = p2.s + b.s;
-            top = [`${val} \\text{ ${start}}`, `10^{${Math.log10(p1.f)}} \\text{ ${b.s}}`, `1 \\text{ ${end}}` ];
-            bot = [` `, `1 \\text{ ${start}}`, `10^{${Math.log10(p2.f)}} \\text{ ${b.s}}` ];
-            run = (run * p1.f) / p2.f;
+    if (currentMode === 'single') {
+        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        let p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        
+        start = p1.s + b.s; 
+        end = p2.s + b.s;
+        top.push(`${val} \\text{ ${start}}`);
+        bot.push(` `);
+
+        // --- STEP 1: Start Unit to Base Unit ---
+        if (p1.f >= 1) { 
+            // Start is bigger or equal to base (e.g., kg to g)
+            // 1 kg = 1000 g
+            top.push(`${p1.f} \\text{ ${b.s}}`);
+            bot.push(`1 \\text{ ${start}}`);
+        } else { 
+            // Start is smaller than base (e.g., mg to g)
+            // 1 g = 1000 mg
+            top.push(`1 \\text{ ${b.s}}`);
+            bot.push(`${1 / p1.f} \\text{ ${start}}`);
+        }
+        run = run * p1.f; // Mathematically convert to base
+
+        // --- STEP 2: Base Unit to End Unit ---
+        if (p2.f >= 1) { 
+            // End unit is bigger than base (e.g., g to kg)
+            // 1 kg = 1000 g
+            top.push(`1 \\text{ ${end}}`);
+            bot.push(`${p2.f} \\text{ ${b.s}}`);
+        } else { 
+            // End unit is smaller than base (e.g., g to mg)
+            // 1 g = 1000 mg
+            top.push(`${1 / p2.f} \\text{ ${end}}`);
+            bot.push(`1 \\text{ ${b.s}}`);
+        }
+        run = run / p2.f; // Mathematically convert to target
+
+    } else if (currentMode === 'multi') {
+        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
+        let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
+        start = p1.s + b.s; 
+        end = imp.s;
+        
+        top.push(`${val} \\text{ ${start}}`);
+        bot.push(` `);
+
+        // Metric Prefix to Base (using Big-is-1 logic)
+        if (p1.f >= 1) {
+            top.push(`${p1.f} \\text{ ${b.s}}`);
+            bot.push(`1 \\text{ ${start}}`);
         } else {
-            // Logic for Multi (Imperial)
-            let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-            let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
-            start = p1.s + b.s; end = imp.s;
-            top = [`${val} \\text{ ${start}}`, `10^{${Math.log10(p1.f)}} \\text{ ${b.s}}`, `${b.bridge.val} \\text{ ${b.bridge.to}}` ];
-            bot = [` `, `1 \\text{ ${start}}`, `1 \\text{ ${b.s}}` ];
-            run = run * p1.f * b.bridge.val;
-            if (imp.s !== b.bridge.to) {
+            top.push(`1 \\text{ ${b.s}}`);
+            bot.push(`${1 / p1.f} \\text{ ${start}}`);
+        }
+        run = run * p1.f;
+
+        // Base to Imperial Bridge (Bridge is usually 1 of the imperial unit)
+        top.push(`${b.bridge.val} \\text{ ${b.bridge.to}}`);
+        bot.push(`1 \\text{ ${b.s}}`);
+        run = run * b.bridge.val;
+
+        // Imperial to Imperial (e.g., lb to oz)
+        if (imp.s !== b.bridge.to) {
+            // Logic: 1 lb = 16 oz
+            if (imp.r > 1) {
+                top.push(`${imp.r} \\text{ ${imp.s}}`);
+                bot.push(`1 \\text{ ${b.bridge.to}}`);
+                run = run * imp.r;
+            } else {
                 top.push(`1 \\text{ ${imp.s}}`);
-                bot.push(`${imp.r} \\text{ ${b.bridge.to}}`);
-                run /= imp.r;
+                bot.push(`${1/imp.r} \\text{ ${b.bridge.to}}`);
+                run = run * imp.r;
             }
         }
-
-        currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
-        document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
     }
+
+    currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
+    document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
+}
 
     function toggleAnswer() {
         const div = document.getElementById('answer-display');
