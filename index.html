@@ -121,7 +121,7 @@
         generateProblem();
     }
 
- function generateProblem() {
+function generateProblem() {
     document.getElementById('answer-display').classList.add('hidden');
     const sf = Math.floor(Math.random() * 2) + 3; 
     let val = (Math.random() * 90 + 10).toPrecision(sf);
@@ -130,10 +130,16 @@
     const b = bases[cat];
     let start, end, top = [], bot = [], run = parseFloat(val);
 
-    // Helper to clean up computer math errors (e.g., 999.99999 -> 1000)
+    // Helper to clean up computer math AND format large numbers in Scientific Notation
     const clean = (num) => {
-        if (num >= 1) return Math.round(num * 1e10) / 1e10; // Rounds to 10 decimal places to snap to whole numbers
-        return num; 
+        let rounded = Math.round(num * 1e10) / 1e10;
+        // If the number is very large or very small, use scientific notation for the setup boxes
+        if (rounded >= 10000 || (rounded < 0.001 && rounded > 0)) {
+            let exp = Math.floor(Math.log10(rounded));
+            let base = (rounded / Math.pow(10, exp)).toFixed(0); // Keeps it simple like 1 x 10^9
+            return `${base} \\times 10^{${exp}}`;
+        }
+        return rounded; 
     };
 
     if (currentMode === 'single') {
