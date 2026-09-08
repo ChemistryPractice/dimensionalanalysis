@@ -20,21 +20,41 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --error: #c0392b; --bg: #f4f7f6; --sidebar-w: 260px; }
+        :root { 
+            --primary: #2c3e50; 
+            --accent: #27ae60; 
+            --worksheet-accent: #16a085;
+            --error: #c0392b; 
+            --bg: #f4f7f6; 
+            --sidebar-w: 270px; 
+        }
+        
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: var(--sidebar-w); background: var(--primary); color: white; display: flex; flex-direction: column; padding: 20px; }
-        #sidebar h2 { text-align: center; margin-bottom: 20px; }
-        .nav-btn { background: none; border: 1px solid #455a64; color: white; padding: 12px; margin-bottom: 8px; border-radius: 5px; cursor: pointer; text-align: left; }
+        #sidebar { width: var(--sidebar-w); background: var(--primary); color: white; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #sidebar h2 { text-align: center; margin-bottom: 20px; font-size: 1.4rem; }
+        
+        .nav-btn { background: none; border: 1px solid #455a64; color: white; padding: 12px; margin-bottom: 8px; border-radius: 5px; cursor: pointer; text-align: left; font-size: 0.95rem; }
         .nav-btn:hover { background: #34495e; }
         .nav-btn.active { background: var(--accent); border-color: var(--accent); }
-        .ref-group { margin-top: auto; border-top: 1px solid #455a64; padding-top: 20px; }
+
+        .section-header { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #b0bec5; margin: 15px 0 8px 0; font-weight: 600; }
+        
+        /* Worksheet Section Styling (Bottom Third) */
+        .ws-group { margin-top: auto; border-top: 1px solid #455a64; padding-top: 15px; margin-bottom: 15px; }
+        .ws-btn { background: #2c3e50; border-color: var(--worksheet-accent); color: #e0f2f1; }
+        .ws-btn:hover { background: var(--worksheet-accent); color: white; }
+
+        /* Reference Section Styling */
+        .ref-group { border-top: 1px solid #455a64; padding-top: 15px; }
         .ref-btn { background: #7f8c8d; }
+        .ref-btn:hover { background: #95a5a6; }
+
         #main-content { flex-grow: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
         .card { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 800px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         #problem-area { font-size: 1.4rem; margin-top: 30px; min-height: 200px; text-align: center; }
         .answer-box { margin-top: 20px; padding: 20px; background: #f9f9f9; border-left: 5px solid var(--accent); border-radius: 5px; width: 100%; overflow-x: auto; }
         .hidden { display: none; }
-        .overlay { display: none; position: fixed; top: 5%; left: 280px; right: 20px; bottom: 5%; background: white; border-radius: 10px; z-index: 100; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+        .overlay { display: none; position: fixed; top: 5%; left: 290px; right: 20px; bottom: 5%; background: white; border-radius: 10px; z-index: 100; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
         .close-btn { background: var(--error); color: white; border: none; padding: 5px 15px; cursor: pointer; border-radius: 3px; }
     </style>
 </head>
@@ -43,10 +63,24 @@
 
 <div id="sidebar">
     <h2>Dimensional Analysis</h2>
+    
+    <div class="section-header">Practice Mode</div>
     <button class="nav-btn" onclick="setMode('single', event)">Metric to Metric</button>
     <button class="nav-btn" onclick="setMode('multi', event)">Metric / Imperial</button>
     <button class="nav-btn" onclick="setMode('double', event)">Double Conversions</button>
+
+    <!-- Worksheet Generator Group (Bottom Third) -->
+    <div class="ws-group">
+        <div class="section-header">Worksheet Generator</div>
+        <button class="nav-btn ws-btn" onclick="generateWorksheet('single')">Generate Metric Worksheet</button>
+        <button class="nav-btn ws-btn" onclick="generateWorksheet('multi')">Generate Metric/Imperial</button>
+        <button class="nav-btn ws-btn" onclick="generateWorksheet('double')">Generate Double Conversions</button>
+        <button class="nav-btn ws-btn" onclick="generateWorksheet('random')">Generate Random</button>
+    </div>
+
+    <!-- Reference Tools Group -->
     <div class="ref-group">
+        <div class="section-header">Reference Tools</div>
         <button class="nav-btn ref-btn" onclick="toggleRef('calc')">Calculator</button>
         <button class="nav-btn ref-btn" onclick="toggleRef('ptable')">Periodic Table</button>
         <button class="nav-btn ref-btn" onclick="toggleRef('eqn')">Equation Sheet</button>
@@ -112,6 +146,134 @@
         return res;
     }
 
+    // --- REUSABLE PROBLEM GENERATOR CORE ---
+    function createSingleProblem(mode) {
+        let selectedMode = mode;
+        if (selectedMode === 'random') {
+            const modes = ['single', 'multi', 'double'];
+            selectedMode = modes[Math.floor(Math.random() * modes.length)];
+        }
+
+        const sf = Math.floor(Math.random() * 2) + 3; 
+        let val = (Math.random() * 90 + 10).toPrecision(sf);
+        
+        const catKeys = ['mass', 'length', 'volume'];
+        const cat = catKeys[Math.floor(Math.random() * catKeys.length)];
+        const b = bases[cat];
+        let start, end, top = [], bot = [], run = parseFloat(val);
+
+        const clean = (num) => {
+            let rounded = Math.round(num * 1e10) / 1e10;
+            if (rounded >= 10000 || (rounded < 0.001 && rounded > 0)) {
+                let exp = Math.floor(Math.log10(rounded));
+                let base = (rounded / Math.pow(10, exp)).toFixed(0);
+                return `${base} \\times 10^{${exp}}`;
+            }
+            return rounded; 
+        };
+
+        if (selectedMode === 'single') {
+            let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            let p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            
+            start = p1.s + b.s; 
+            end = p2.s + b.s;
+            top.push(`${val} \\text{ ${start}}`);
+            bot.push(` `);
+
+            if (p1.f >= 1) { 
+                top.push(`${clean(p1.f)} \\text{ ${b.s}}`);
+                bot.push(`1 \\text{ ${start}}`);
+            } else { 
+                top.push(`1 \\text{ ${b.s}}`);
+                bot.push(`${clean(1 / p1.f)} \\text{ ${start}}`);
+            }
+            run = run * p1.f;
+
+            if (p2.f >= 1) { 
+                top.push(`1 \\text{ ${end}}`);
+                bot.push(`${clean(p2.f)} \\text{ ${b.s}}`);
+            } else { 
+                top.push(`${clean(1 / p2.f)} \\text{ ${end}}`);
+                bot.push(`1 \\text{ ${b.s}}`);
+            }
+            run = run / p2.f;
+
+        } else if (selectedMode === 'multi') {
+            let p1 = prefixes[Math.floor(Math.random() * prefixes.length)];
+            let imp = imperial[cat][Math.floor(Math.random() * imperial[cat].length)];
+            start = p1.s + b.s; 
+            end = imp.s;
+            top.push(`${val} \\text{ ${start}}`);
+            bot.push(` `);
+
+            if (p1.f >= 1) {
+                top.push(`${clean(p1.f)} \\text{ ${b.s}}`);
+                bot.push(`1 \\text{ ${start}}`);
+            } else {
+                top.push(`1 \\text{ ${b.s}}`);
+                bot.push(`${clean(1 / p1.f)} \\text{ ${start}}`);
+            }
+            run = run * p1.f;
+
+            top.push(`${b.bridge.val} \\text{ ${b.bridge.to}}`);
+            bot.push(`1 \\text{ ${b.s}}`);
+            run = run * b.bridge.val;
+
+            if (imp.s !== b.bridge.to) {
+                if (imp.r > 1) {
+                    top.push(`${clean(imp.r)} \\text{ ${imp.s}}`);
+                    bot.push(`1 \\text{ ${b.bridge.to}}`);
+                } else {
+                    top.push(`1 \\text{ ${imp.s}}`);
+                    bot.push(`${clean(1/imp.r)} \\text{ ${b.bridge.to}}`);
+                }
+                run = run * imp.r;
+            }
+
+        } else if (selectedMode === 'double') {
+            const db = bases.length; 
+            let p1 = prefixes[Math.floor(Math.random() * 4)]; 
+            let p2 = prefixes[Math.floor(Math.random() * 4)];
+            
+            start = `${p1.s}${db.s}/hr`;
+            end = `${p2.s}${db.s}/s`;
+            top.push(`${val} \\text{ ${p1.s}${db.s}}`);
+            bot.push(`1 \\text{ hr}`);
+
+            if (p1.f >= p2.f) {
+                top.push(`${clean(p1.f / p2.f)} \\text{ ${p2.s}${db.s}}`);
+                bot.push(`1 \\text{ ${p1.s}${db.s}}`);
+            } else {
+                top.push(`1 \\text{ ${p2.s}${db.s}}`);
+                bot.push(`${clean(p2.f / p1.f)} \\text{ ${p1.s}${db.s}}`);
+            }
+            run = (run * p1.f) / p2.f;
+
+            top.push(`1 \\text{ hr}`);
+            bot.push(`3600 \\text{ s}`);
+            run = run / 3600;
+        }
+
+        let cols = top.length;
+        let grid = "|".repeat(cols + 1).split("").join("c");
+        let ans = formatSF(run, sf);
+        let latexSetup = `$$ \\begin{array}{${grid}} ${top.join(" & ")} \\\\ \\hline ${bot.join(" & ")} \\end{array} = ${ans} \\text{ ${end}} $$`;
+
+        return {
+            val: val,
+            start: start,
+            end: end,
+            ans: ans,
+            top: top,
+            bot: bot,
+            latexSetup: latexSetup,
+            questionText: `Convert ${val} ${start} to ${end}`
+        };
+    }
+
+    // --- UI EVENT HANDLERS ---
     function setMode(mode, e) {
         currentMode = mode;
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -121,125 +283,20 @@
         generateProblem();
     }
 
-function generateProblem() {
-    document.getElementById('answer-display').classList.add('hidden');
-    const sf = Math.floor(Math.random() * 2) + 3; 
-    let val = (Math.random() * 90 + 10).toPrecision(sf);
-    
-    const cat = ['mass', 'length', 'volume'][Math.floor(Math.random()*3)];
-    const b = bases[cat];
-    let start, end, top = [], bot = [], run = parseFloat(val);
+    function generateProblem() {
+        document.getElementById('answer-display').classList.add('hidden');
+        if (!currentMode) return;
 
-    // Helper to clean up computer math AND format large numbers in Scientific Notation
-    const clean = (num) => {
-        let rounded = Math.round(num * 1e10) / 1e10;
-        // If the number is very large or very small, use scientific notation for the setup boxes
-        if (rounded >= 10000 || (rounded < 0.001 && rounded > 0)) {
-            let exp = Math.floor(Math.log10(rounded));
-            let base = (rounded / Math.pow(10, exp)).toFixed(0); // Keeps it simple like 1 x 10^9
-            return `${base} \\times 10^{${exp}}`;
-        }
-        return rounded; 
-    };
-
-    if (currentMode === 'single') {
-        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-        let p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
-        while(p1.s === p2.s) p2 = prefixes[Math.floor(Math.random()*prefixes.length)];
-        
-        start = p1.s + b.s; 
-        end = p2.s + b.s;
-        top.push(`${val} \\text{ ${start}}`);
-        bot.push(` `);
-
-        if (p1.f >= 1) { 
-            top.push(`${clean(p1.f)} \\text{ ${b.s}}`);
-            bot.push(`1 \\text{ ${start}}`);
-        } else { 
-            top.push(`1 \\text{ ${b.s}}`);
-            bot.push(`${clean(1 / p1.f)} \\text{ ${start}}`);
-        }
-        run = run * p1.f;
-
-        if (p2.f >= 1) { 
-            top.push(`1 \\text{ ${end}}`);
-            bot.push(`${clean(p2.f)} \\text{ ${b.s}}`);
-        } else { 
-            top.push(`${clean(1 / p2.f)} \\text{ ${end}}`);
-            bot.push(`1 \\text{ ${b.s}}`);
-        }
-        run = run / p2.f;
-
-    } else if (currentMode === 'multi') {
-        let p1 = prefixes[Math.floor(Math.random()*prefixes.length)];
-        let imp = imperial[cat][Math.floor(Math.random()*imperial[cat].length)];
-        start = p1.s + b.s; 
-        end = imp.s;
-        top.push(`${val} \\text{ ${start}}`);
-        bot.push(` `);
-
-        if (p1.f >= 1) {
-            top.push(`${clean(p1.f)} \\text{ ${b.s}}`);
-            bot.push(`1 \\text{ ${start}}`);
-        } else {
-            top.push(`1 \\text{ ${b.s}}`);
-            bot.push(`${clean(1 / p1.f)} \\text{ ${start}}`);
-        }
-        run = run * p1.f;
-
-        top.push(`${b.bridge.val} \\text{ ${b.bridge.to}}`);
-        bot.push(`1 \\text{ ${b.s}}`);
-        run = run * b.bridge.val;
-
-        if (imp.s !== b.bridge.to) {
-            if (imp.r > 1) {
-                top.push(`${clean(imp.r)} \\text{ ${imp.s}}`);
-                bot.push(`1 \\text{ ${b.bridge.to}}`);
-            } else {
-                top.push(`1 \\text{ ${imp.s}}`);
-                bot.push(`${clean(1/imp.r)} \\text{ ${b.bridge.to}}`);
-            }
-            run = run * imp.r;
-        }
-
-    } else if (currentMode === 'double') {
-        const db = bases.length; 
-        let p1 = prefixes[Math.floor(Math.random() * 4)]; 
-        let p2 = prefixes[Math.floor(Math.random() * 4)];
-        
-        start = `${p1.s}${db.s}/hr`;
-        end = `${p2.s}${db.s}/s`;
-        top.push(`${val} \\text{ ${p1.s}${db.s}}`);
-        bot.push(`1 \\text{ hr}`);
-
-        if (p1.f >= p2.f) {
-            top.push(`${clean(p1.f / p2.f)} \\text{ ${p2.s}${db.s}}`);
-            bot.push(`1 \\text{ ${p1.s}${db.s}}`);
-        } else {
-            top.push(`1 \\text{ ${p2.s}${db.s}}`);
-            bot.push(`${clean(p2.f / p1.f)} \\text{ ${p1.s}${db.s}}`);
-        }
-        run = (run * p1.f) / p2.f;
-
-        top.push(`1 \\text{ hr}`);
-        bot.push(`3600 \\text{ s}`);
-        run = run / 3600;
+        currentProblem = createSingleProblem(currentMode);
+        document.getElementById('problem-text').innerHTML = `Convert <strong>${currentProblem.val} ${currentProblem.start}</strong> to <strong>${currentProblem.end}</strong>`;
     }
-
-    currentProblem = { start, end, ans: formatSF(run, sf), top, bot };
-    document.getElementById('problem-text').innerHTML = `Convert <strong>${val} ${start}</strong> to <strong>${end}</strong>`;
-}
 
     function toggleAnswer() {
         const div = document.getElementById('answer-display');
         if (!div.classList.contains('hidden')) { div.classList.add('hidden'); return; }
         if (!currentProblem) return;
 
-        let cols = currentProblem.top.length;
-        let grid = "|".repeat(cols + 1).split("").join("c");
-        let latex = `$$ \\begin{array}{${grid}} ${currentProblem.top.join(" & ")} \\\\ \\hline ${currentProblem.bot.join(" & ")} \\end{array} = ${currentProblem.ans} \\text{ ${currentProblem.end}} $$`;
-
-        div.innerHTML = `<strong>Setup:</strong><br>${latex}`;
+        div.innerHTML = `<strong>Setup:</strong><br>${currentProblem.latexSetup}`;
         div.classList.remove('hidden');
         
         if(window.MathJax) MathJax.typesetPromise([div]);
@@ -248,6 +305,24 @@ function generateProblem() {
     function toggleRef(id) {
         const el = document.getElementById(id);
         el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // --- WORKSHEET GENERATOR INSTRUCTIONS ---
+    function generateWorksheet(wsType, problemCount = 10) {
+        const problemSet = [];
+        for (let i = 0; i < problemCount; i++) {
+            problemSet.push(createSingleProblem(wsType));
+        }
+
+        console.log(`Generated ${wsType} worksheet (${problemCount} problems):`, problemSet);
+        
+        // Trigger export hook
+        exportWorksheetToGoogleDoc(wsType, problemSet);
+    }
+
+    function exportWorksheetToGoogleDoc(wsType, problemSet) {
+        // Placeholder function to connect to Google Drive API / Apps Script
+        alert(`Generated ${problemSet.length} problems for target mode: ${wsType}.\n\nReady for Google Template export setup!`);
     }
 </script>
 
