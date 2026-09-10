@@ -308,22 +308,62 @@
     }
 
     // --- WORKSHEET GENERATOR INSTRUCTIONS ---
-    function generateWorksheet(wsType, problemCount = 10) {
-        const problemSet = [];
-        for (let i = 0; i < problemCount; i++) {
-            problemSet.push(createSingleProblem(wsType));
+    // --- WORKSHEET GENERATOR FUNCTIONS ---
+function generateWorksheet(wsType, problemCount = 20) {
+    const problemSet = [];
+    for (let i = 0; i < problemCount; i++) {
+        problemSet.push(createSingleProblem(wsType));
+    }
+
+    exportWorksheetToGoogleDoc(wsType, problemSet);
+}
+
+function exportWorksheetToGoogleDoc(wsType, problemSet) {
+    // Paste your Google Apps Script Web App URL here
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwjz6ihLl3IL1lzDAqSyN1wFo25hBJYOZ4Th5y5bQsvLokIW86Z5prJjoQfodPXLJOJ/exec';
+
+    const titles = {
+        'single': 'Metric Conversions Worksheet',
+        'multi':  'Metric & Imperial Conversions Worksheet',
+        'double': 'Double Conversions Worksheet',
+        'random': 'Mixed Dimensional Analysis Worksheet'
+    };
+
+    if (GOOGLE_SCRIPT_URL.includes('PASTE_YOUR_')) {
+        alert("Please set your Google Apps Script Web App URL in the script.");
+        return;
+    }
+
+    // Indicate generation in progress
+    const originalText = event ? event.target.innerText : '';
+    if (event) event.target.innerText = "Generating...";
+
+    const payload = {
+        type: wsType,
+        title: titles[wsType] || 'Dimensional Analysis Worksheet',
+        questions: problemSet
+    };
+
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (event) event.target.innerText = originalText;
+        if (data.url && !data.url.startsWith('Error')) {
+            window.open(data.url, '_blank');
+        } else {
+            alert("Error generating doc: " + (data.error || data.url));
         }
-
-        console.log(`Generated ${wsType} worksheet (${problemCount} problems):`, problemSet);
-        
-        // Trigger export hook
-        exportWorksheetToGoogleDoc(wsType, problemSet);
-    }
-
-    function exportWorksheetToGoogleDoc(wsType, problemSet) {
-        // Placeholder function to connect to Google Drive API / Apps Script
-        alert(`Generated ${problemSet.length} problems for target mode: ${wsType}.\n\nReady for Google Template export setup!`);
-    }
+    })
+    .catch(err => {
+        if (event) event.target.innerText = originalText;
+        alert("Request failed: " + err);
+    });
+}
 </script>
 
 </body>
